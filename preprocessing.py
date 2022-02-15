@@ -4,7 +4,7 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 from nltk.stem import WordNetLemmatizer
-
+import pandas as pd
 
 
 #Global variables
@@ -59,10 +59,20 @@ def pre_process(doc, basic_processing = False, no_stopwords = False, stemming = 
     return final_doc
 
 
-#sem proces - pre_process(doc)
-#com stopword - pre_process(doc, basic_processing = True)
-#sem stopword - pre_process(doc, basic_processing = True, no_stopwords = True)
-#com stemmizacao - pre_process(doc, basic_processing = True, stemming = True)
-#com stemmizacao - pre_process(doc, basic_processing = True, no_stopwords = True, stemming = True)
-#com lema - pre_process(doc, basic_processing = True, lema = True)
-#com lema - pre_process(doc, basic_processing = True, no_stopwords = True, lema = True)
+'''
+sem processamento - pre_process(doc)
+com stopword - pre_process(doc, basic_processing = True)
+sem stopword - pre_process(doc, basic_processing = True, no_stopwords = True)
+com stemização - pre_process(doc, basic_processing = True, stemming = True)
+com stemização - pre_process(doc, basic_processing = True, no_stopwords = True, stemming = True)
+com lematização - pre_process(doc, basic_processing = True, lema = True)
+com lematização - pre_process(doc, basic_processing = True, no_stopwords = True, lema = True)
+'''
+def pre_process_all(df, pre_processing_list):
+
+    for param, index in zip(pre_processing_list, range(len(pre_processing_list))):
+        
+        df[f"doc1_pipeline{index}"] = df["doc1"].apply(lambda x: pre_process(x, **param))
+        df[f"doc2_pipeline{index}"] = df["doc2"].apply(lambda x: pre_process(x, **param))
+
+    return df
