@@ -182,6 +182,3 @@ def apply_word2vec(df, len_pipeline, model):
         df_word2vec[f'word2vec{index}'] = df.apply(lambda row: get_word2vec(model, " ".join(row[f'doc1_pipeline{index}']), " ".join(row[f'doc2_pipeline{index}'])), axis=1)
 
     return df_word2vec
-
-
-
