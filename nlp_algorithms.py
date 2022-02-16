@@ -1,6 +1,7 @@
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from scipy import spatial
 import pandas as pd
 
 def join_docs(df_text, column1, column2, unique = False):
@@ -14,6 +15,7 @@ def join_docs(df_text, column1, column2, unique = False):
         data = list(set(data))
 
     return data
+
 
 
 ###Bag of Words###
@@ -36,8 +38,7 @@ def get_bow(doc1, doc2):
 def apply_bow(df, len_pipeline):
 
     df_bow = pd.DataFrame()
-    for index in range(len_pipeline):
-    
+    for index in range(len_pipeline):    
         df_bow[f'bow{index}'] = df.apply(lambda row: get_bow(row[f'doc1_pipeline{index}'], row[f'doc2_pipeline{index}']), axis=1)
 
     return df_bow
@@ -45,7 +46,6 @@ def apply_bow(df, len_pipeline):
 
 
 ###TF-IDF###
-
 def calculate_tf_idf(df, column1, column2):
     
     data = join_docs(df, column1, column2)
@@ -53,6 +53,7 @@ def calculate_tf_idf(df, column1, column2):
     tf_idf = TfidfVectorizer().fit_transform(data)
     
     return tf_idf
+
 
 def get_tf_idf(tf_idf, index):
     
@@ -62,6 +63,7 @@ def get_tf_idf(tf_idf, index):
     cosine_similarities = cosine_similarity(tf_idf[index1], tf_idf[index2])
     
     return cosine_similarities[0][0]
+
 
 def apply_tf_idf(df, len_pipeline):
     
@@ -78,7 +80,31 @@ def apply_tf_idf(df, len_pipeline):
         df_tf_idf[f'tf_idf{index}'] = tf_idf_list
     
     return df_tf_idf
-        
+
+
+
+###Bert###
+def get_bert(model, doc1, doc2):
+    
+    data = [doc1, doc2]
+    sentence_embeddings = model.encode(data)
+
+    infer1 = sentence_embeddings[0]
+    infer2 = sentence_embeddings[1]
+    
+    cos_similarity = 1 - spatial.distance.cosine(infer1, infer2) #de 0 a 1
+    
+    return cos_similarity
+
+
+def apply_bert(df, len_pipeline, model, model_name):
+
+    df_bert = pd.DataFrame()
+    for index in range(len_pipeline):
+        df_bert[f'bert_{model_name}{index}'] = df.apply(lambda row: get_bert(model, " ".join(row[f'doc1_pipeline{index}']), " ".join(row[f'doc2_pipeline{index}'])), axis=1)
+
+    return df_bert
+
 
 ''' 
     for param, index in zip(pre_processing_list, range(len(pre_processing_list))):
