@@ -1,8 +1,20 @@
+import pandas as pd
+import numpy as np
+
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+
 from scipy import spatial
-import pandas as pd
+
+import gensim
+from gensim.models.doc2vec import Doc2Vec
+from gensim.models.doc2vec import TaggedDocument
+from nltk.tokenize import word_tokenize
+
+from gensim.models import Word2Vec
+from gensim.models import KeyedVectors
+
 
 def join_docs(df_text, column1, column2, unique = False):
 
@@ -106,11 +118,70 @@ def apply_bert(df, len_pipeline, model, model_name):
     return df_bert
 
 
-''' 
-    for param, index in zip(pre_processing_list, range(len(pre_processing_list))):
+
+###Doc2Vec###
+def train_doc2vec(df, len_pipeline):
+
+    for index in range(len_pipeline):
+        data = join_docs(df, f'doc1_pipeline{index}', f'doc1_pipeline{index}', unique = True)
+        tagged_data = [TaggedDocument(words = word_tokenize(_d.lower()), tags = [str(i)]) for i, _d in enumerate(data)] 
         
-        df[f"doc1_pipeline{index}"] = df["doc1"].apply(lambda x: pre_process(x, **param))
-        df[f"doc2_pipeline{index}"] = df["doc2"].apply(lambda x: pre_process(x, **param))
-'''
+        model = gensim.models.doc2vec.Doc2Vec(vector_size = 30, min_count = 0, epochs = 80)
+        model.build_vocab(tagged_data)
+        model.train(tagged_data, total_examples = model.corpus_count, epochs = 80)
+        model.save(f'd2v{index}.model')
+
+
+def get_doc2vec(model, doc1, doc2):
+    
+    infer1 = model.infer_vector(doc1)
+    infer2 = model.infer_vector(doc2)
+    
+    cos_similarity = 1 - spatial.distance.cosine(infer1, infer2) #de 0 a 1
+    
+    return cos_similarity
+    
+    
+def apply_doc2vec(df, len_pipeline):
+    
+    df_doc2vec = pd.DataFrame()    
+    for index in range(len_pipeline):
+        model = Doc2Vec.load(f'd2v{index}.model')
+        df_doc2vec[f'doc2vec{index}'] = df.apply(lambda row: get_doc2vec(model, (row[f'doc1_pipeline{index}']), (row[f'doc2_pipeline{index}'])), axis=1)
+
+    return df_doc2vec
+
+
+
+###Word2Vec###
+def get_mean_vector(model, words): #words é um documento inteiro
+
+    # remove out-of-vocabulary words
+    words = [word for word in words if word in model.index_to_key]
+    
+    if len(words) >= 1:
+        return np.mean(model[words], axis = 0)
+    else:
+        return []
+
+
+def get_word2vec(model, doc1, doc2):
+    
+    infer1 = get_mean_vector(model, doc1)
+    infer2 = get_mean_vector(model, doc2)
+    
+    cos_similarity = 1 - spatial.distance.cosine(infer1, infer2) #de 0 a 1
+    
+    return cos_similarity
+
+
+def apply_word2vec(df, len_pipeline, model):
+
+    df_word2vec = pd.DataFrame()
+    for index in range(len_pipeline):
+        df_word2vec[f'word2vec{index}'] = df.apply(lambda row: get_word2vec(model, " ".join(row[f'doc1_pipeline{index}']), " ".join(row[f'doc2_pipeline{index}'])), axis=1)
+
+    return df_word2vec
+
 
 
