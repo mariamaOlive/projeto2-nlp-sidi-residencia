@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import time
 
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -49,11 +50,14 @@ def get_bow(doc1, doc2):
 
 def apply_bow(df, len_pipeline):
 
+    time_list = []
     df_bow = pd.DataFrame()
     for index in range(len_pipeline):    
+        start_time = time.time()
         df_bow[f'bow{index}'] = df.apply(lambda row: get_bow(row[f'doc1_pipeline{index}'], row[f'doc2_pipeline{index}']), axis=1)
+        time_list.append((f'bow{index}', time.time()-start_time))
 
-    return df_bow
+    return (df_bow, pd.DataFrame(time_list))
 
 
 
@@ -79,19 +83,23 @@ def get_tf_idf(tf_idf, index):
 
 def apply_tf_idf(df, len_pipeline):
     
+    time_list = []
     df_tf_idf = pd.DataFrame()
 
     for index in range(len_pipeline):
-    
+        
+        start_time = time.time()
         tf_idf = calculate_tf_idf(df, f'doc1_pipeline{index}', f'doc2_pipeline{index}')
 
         tf_idf_list = []
         for index_df in range(len(df)):
+            
             tf_idf_list.append(get_tf_idf(tf_idf, index_df))
         
         df_tf_idf[f'tf_idf{index}'] = tf_idf_list
+        time_list.append((f'tf_idf{index}', time.time()-start_time))
     
-    return df_tf_idf
+    return (df_tf_idf, pd.DataFrame(time_list))
 
 
 
@@ -111,11 +119,15 @@ def get_bert(model, doc1, doc2):
 
 def apply_bert(df, len_pipeline, model, model_name):
 
+    time_list = []
+
     df_bert = pd.DataFrame()
     for index in range(len_pipeline):
+        start_time = time.time()
         df_bert[f'bert_{model_name}{index}'] = df.apply(lambda row: get_bert(model, " ".join(row[f'doc1_pipeline{index}']), " ".join(row[f'doc2_pipeline{index}'])), axis=1)
+        time_list.append((f'bert_{model_name}{index}', time.time()-start_time))
 
-    return df_bert
+    return (df_bert, pd.DataFrame(time_list))
 
 
 
@@ -144,12 +156,15 @@ def get_doc2vec(model, doc1, doc2):
     
 def apply_doc2vec(df, len_pipeline):
     
+    time_list = []    
     df_doc2vec = pd.DataFrame()    
     for index in range(len_pipeline):
+        start_time = time.time()
         model = Doc2Vec.load(f'd2v{index}.model')
         df_doc2vec[f'doc2vec{index}'] = df.apply(lambda row: get_doc2vec(model, (row[f'doc1_pipeline{index}']), (row[f'doc2_pipeline{index}'])), axis=1)
+        time_list.append((f'doc2vec{index}', time.time()-start_time))
 
-    return df_doc2vec
+    return (df_doc2vec, pd.DataFrame(time_list))
 
 
 
@@ -176,9 +191,12 @@ def get_word2vec(model, doc1, doc2):
 
 
 def apply_word2vec(df, len_pipeline, model):
-
+    
+    time_list = [] 
     df_word2vec = pd.DataFrame()
     for index in range(len_pipeline):
+        start_time = time.time()
         df_word2vec[f'word2vec{index}'] = df.apply(lambda row: get_word2vec(model, " ".join(row[f'doc1_pipeline{index}']), " ".join(row[f'doc2_pipeline{index}'])), axis=1)
+        time_list.append((f'word2vec{index}', time.time()-start_time))
 
-    return df_word2vec
+    return (df_word2vec, pd.DataFrame(time_list))
