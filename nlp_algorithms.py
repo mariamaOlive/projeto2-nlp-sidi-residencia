@@ -135,7 +135,7 @@ def apply_bert(df, len_pipeline, model, model_name):
 def train_doc2vec(df, len_pipeline):
 
     for index in range(len_pipeline):
-        data = join_docs(df, f'doc1_pipeline{index}', f'doc1_pipeline{index}', unique = True)
+        data = join_docs(df, f'doc1_pipeline{index}', f'doc2_pipeline{index}', unique = True)
         tagged_data = [TaggedDocument(words = word_tokenize(_d.lower()), tags = [str(i)]) for i, _d in enumerate(data)] 
         
         model = gensim.models.doc2vec.Doc2Vec(vector_size = 30, min_count = 0, epochs = 80)
@@ -173,7 +173,7 @@ def get_mean_vector(model, words): #words é um documento inteiro
 
     # remove out-of-vocabulary words
     words = [word for word in words if word in model.index_to_key]
-    
+
     if len(words) >= 1:
         return np.mean(model[words], axis = 0)
     else:
@@ -196,7 +196,7 @@ def apply_word2vec(df, len_pipeline, model):
     df_word2vec = pd.DataFrame()
     for index in range(len_pipeline):
         start_time = time.time()
-        df_word2vec[f'word2vec{index}'] = df.apply(lambda row: get_word2vec(model, " ".join(row[f'doc1_pipeline{index}']), " ".join(row[f'doc2_pipeline{index}'])), axis=1)
+        df_word2vec[f'word2vec{index}'] = df.apply(lambda row: get_word2vec(model, row[f'doc1_pipeline{index}'], row[f'doc2_pipeline{index}']), axis=1)
         time_list.append((f'word2vec{index}', time.time()-start_time))
 
     return (df_word2vec, pd.DataFrame(time_list))
